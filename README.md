@@ -119,4 +119,7 @@ The dashboard files, `dashboard.py`, `templates/index.html`, `static/app.js`, an
 
 The pricing models follow [Black and Scholes (1973)](https://www.journals.uchicago.edu/doi/abs/10.1086/260062) and [Merton (1976)](https://www.sciencedirect.com/science/article/pii/0304405X76900222).
 
-Santiago Orta
+
+
+
+By Santiago Orta
