@@ -118,3 +118,5 @@ This project is based on Roman Paolucci's work in the [Quant Guild Library](http
 The dashboard files, `dashboard.py`, `templates/index.html`, `static/app.js`, and `static/style.css`, were created with ChatGPT Codex. The dashboard uses the simulator's results and calculates additional display values, including reference-model delta exposure and 40-run comparison metrics.
 
 The pricing models follow [Black and Scholes (1973)](https://www.journals.uchicago.edu/doi/abs/10.1086/260062) and [Merton (1976)](https://www.sciencedirect.com/science/article/pii/0304405X76900222).
+
+Santiago Orta

@@ -430,3 +430,5 @@ function renderMultiRun() {
   ];
   drawLines('multi-run-chart', lines, result.average_pnl.length, null, true, `${result.average_pnl.length - 1} ticks`);
 }
+
+
