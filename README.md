@@ -8,7 +8,9 @@ The dashboard shows how buying, selling, and hedging options affect each trade's
 
 - `market.py` Calculates Black–Scholes–Merton prices and Greeks, and Merton jump-diffusion prices and deltas.
 - `market_making_simulation.py` Generates quotes, simulates fills, hedges each filled option through expiry, and reports results (including P&L). It also samples terminal-return distributions for GBM and jump diffusion.
+- `fill_probability.py` Contains the logistic function (more functions to be added in the future) that calculates the fill probability for each quoted bid and ask based on their attractiveness.
 - `dashboard.py`, `templates/index.html`, and `static/` provide a local Flask dashboard for running and replaying experiments. Takes all the calculations from `market.py` and `market_making_simulation.py`.
+
 
 ## Simulation Settings
 
@@ -36,8 +38,8 @@ Interest rate: default = 0.05
 Dividend yield (`q`): default = 0 -> continuous dividend yield supported by both BSM and Merton jump diffusion models.
 
 **Execution & run**
-Quote size (`quote_size`): default = 1 -> number of contracts of the selected option type quoted on each side per tick. A filled side executes the entire quote size and quote size also scales the side's fill probability.
-Fill probability (`fill_probability`): default = 0.5 -> base probability for each quoted side. The bid and ask fill independently, each with probability `clip(fill_probability * quote_size, 0, 1)`. Can have scenarios where none fill, one fills and the other doesnt, or both fill.
+Quote size (`quote_size`): default = 1 -> number of contracts of the selected option type quoted on each side per tick. A filled side executes the entire quote size.
+Base fill probability (`base_fill_probability`): default = 0.5 -> base probability for each quoted side that applies when the market makers valuation equals the reference valuation. The bid and ask fill independently, each with probability modeled using a logistic function, with the execution likelihood determined by the bid and ask attractiveness (determined by the mispricing between the model and the true path) and an adjustable sensitivity parameter. Can have scenarios where none fill, one fills and the other doesnt, or both fill.
 Quote ticks (`ticks`): default = 250 -> number of quote opportunities in the simulation (one bid and one ask for the selected option type per tick)
 Hedge steps (`nr_of_hedge_steps`): default = 30 -> the amount of times the hedge position for each contract will be rebalanced (also used for calculating per trade P&L)
 Random seed: for reproducibility
@@ -48,7 +50,7 @@ Random seed: for reproducibility
 
 1. A stock price path is simulated over `simulation_horizon` to set the spot price at each of `ticks` quote opportunities. `price_path_model` selects GBM or Merton jump diffusion (this represents the "true" price path the stock will follow)
 2. Price a fresh option at every tick with `option_pricing_model`. Market maker posts `bid = model_price - half_spread` and `ask = model_price + half_spread`. 
-3. Determine independently whether each bid and ask gets filled. Each side has probability `clip(fill_probability * quote_size, 0, 1)`. A fill executes the entire `quote_size`. This probability is fixed by the inputs and is not affected by the spread, quoted prices, or market conditions. The simplified fill model makes buys and sells equally likely, so pricing errors can offset in the aggregate. Realized average P&L still depends on hedging and the simulated paths.
+3. Determine independently whether each bid and ask gets filled using a logistic function. Execution probabilities depend on quote attractiveness (relative to the theoretical reference value according to the selected price path), with a half-spread adjustment that preserves the baseline fill probability when the market maker prices the option correctly. Underpricing the option increases the likelihood that the ask is lifted and decreases the likelihood that the bid is hit (overpricing has the opposite effect). This replicates adverse selection (assuming other informed participants), making transactions with an unfavorable edge more likely (and ultimately reflecting on the realized P&L).
 4. For each fill, generate a **separate** stock path from the current spot through the option's life `T` (maturity). Hedge the signed option position with the model delta at `nr_of_hedge_steps` intervals. The P&L calculation finances stock holdings at rate `r`, approximates dividends on the holdings, and pays the discounted option payoff. All cash flows are accumulated and discounted at trade initiation so they can be recorded immediately.
 5. Add the completed trade's discounted outcome to cumulative P&L.
 
@@ -103,13 +105,13 @@ Running `python market_making_simulation.py` will print a simulation summary wit
 
 ## 40-seed comparison
 
-The dashboard runs the current configuration with 40 distinct random seeds, ignoring the single-run seed field. It adds each completed run's cumulative P&L curve to the chart and updates the mean curve as runs finish. Select **Reuse previous 40 seeds** to repeat a batch. The metrics include loss-making runs, mean final P&L, and total final P&L divided by all filled contracts across the completed runs. The mean curve averages the run curves at each tick. The per-contract metric pools contracts, so runs with more fills have more weight. Symmetric independent bid and ask fills can make aggregate average P&L per contract close to the half spread even with mismatched models. That outcome is not guaranteed: finite samples, volatility mismatch, and discrete hedging can move realized P&L away from it.
+The dashboard runs the current configuration with 40 distinct random seeds, ignoring the single-run seed field. It adds each completed run's cumulative P&L curve to the chart and updates the mean curve as runs finish. Select **Reuse previous 40 seeds** to repeat a batch. The metrics include loss-making runs, mean final P&L, and total final P&L divided by all filled contracts across the completed runs. The mean curve averages the run curves at each tick. The per-contract metric pools contracts, so runs with more fills have more weight. Valuation dependent fill probabilities create asymmetric order flows when the market maker misprices options. This can reduce expected profitability through adverse selection. Realized P&L could differr due to finite samples, volatility mismatch, discrete hedging, jumps and simulation randomness.
 
 ## Assumptions and limitations
 
 1. **There is no live inventory.** Each fill has its own future path and is completed before its outcome is banked. Opposite-side fills at the same quote tick do not need to cancel.
 2. **Pricing assumes a particular jump-risk treatment.** The stock path uses `mean_drift` as its stock-price drift, while option pricing uses `r` and `q`. The reference jump pricer uses the same jump frequency and size distribution as the simulated path, so it does not include a separate jump-risk premium. Dividend cash on hedging shares is approximated from the stock prices at the ends of each hedge interval.
-3. **Trading frictions are omitted.** There is no order book, adverse-selection mechanism, hedge transaction cost, slippage, market impact, stock bid/ask spread, borrowing spread, capital constraint, or early exercise. Hedging is discrete and the options are European.
+3. **Trading frictions are omitted.** There is no order book, hedge transaction cost, slippage, market impact, stock bid/ask spread, borrowing spread, capital constraint, or early exercise. Hedging is discrete and the options are European.
 
 ## Credits
 

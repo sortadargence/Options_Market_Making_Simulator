@@ -41,7 +41,8 @@ NUMBERS = {
     "r": (-0.1, 0.3),
     "q": (-0.1, 0.3),
     "half_spread": (0.0, 50.0),
-    "fill_probability": (0.0, 1.0),
+    "base_fill_probability": (0.001, 0.999),
+    "fill_sensitivity": (0.0, 100.0)
 }
 INTEGERS = {"quote_size": (1, 20), "nr_of_hedge_steps": (1, 40), "ticks": (10, 300)}
 ALLOWED_FIELDS = {field.name for field in fields(Configuration)}

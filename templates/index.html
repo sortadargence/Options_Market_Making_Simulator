@@ -47,13 +47,14 @@
           </div></div>
           <div class="control-group"><h3>Execution &amp; run</h3><div class="field-grid">
             <label>Quote size <span>contracts</span><input name="quote_size" type="number" min="1" max="20" step="1" required></label>
-            <label>Fill probability <span>base</span><input name="fill_probability" type="number" min="0" max="1" step="any" required></label>
+            <label>Base fill probability <input name="base_fill_probability" type="number" min="0.001" max="0.999" step="any" required></label>
+            <label>Fill sensitivity <input name="fill_sensitivity" type="number" min="0" max="100" step="any" required></label>
             <label>Quote ticks<input name="ticks" type="number" min="10" max="300" step="1" required></label>
             <label>Hedge steps <span>per trade</span><input name="nr_of_hedge_steps" type="number" min="1" max="40" step="1" required></label>
             <label class="span-two">Random seed <span>blank = random</span><input name="seed" type="number" min="0" max="4294967295" step="1"></label>
           </div></div>
           <button id="run-button" class="primary-button" type="submit"><span>Run experiment</span><span>→</span></button>
-          <p class="control-footnote">A fill executes the full quote size. The effective per-side fill chance is min(1, base probability × size), independent of spread.</p>
+          <p class="control-footnote">Execution probabilities depend on quote attractiveness relative to the reference option value. Higher sensitivity increases the effect of mispricing. Each fill executes the full quote size.</p>
         </form>
       </aside>
       <main class="main-column">
@@ -111,12 +112,12 @@
               <article class="metric card"><div class="metric-label">Sell P&amp;L / contract</div><strong id="multi-sell">—</strong><small>Across lifted asks</small></article>
             </div>
             <section class="card chart-card multi-chart-card"><div class="section-heading"><div><span class="eyebrow">CUMULATIVE DISCOUNTED P&amp;L</span><h2>Individual runs and their mean</h2></div></div><svg id="multi-run-chart" class="line-chart" role="img" aria-label="Cumulative P and L for 40 seeds and their average"></svg><div class="legend"><span><i class="key individual"></i>Individual seed</span><span><i class="key average"></i>Average of 40</span></div></section>
-            <div class="interpretation multi-interpretation"><strong>Reading the average</strong><span>Fills are equally likely on bid and ask, independent of model error. A pricing mismatch can help buys and hurt sells, or the reverse; these effects can cancel in the combined average. The model does not simulate adverse selection. With matched pricing and sufficiently fine hedging, average P&amp;L per contract is expected near the quoted half spread.</span></div>
+            <span>Fill probabilities respond to differences between the market maker's valuation and the reference option value. Underpriced options attract more buyers, while overpriced options attract more sellers. This introduces adverse selection into expected trading profitability. Each trade is still evaluated independently, without live inventory management.</span>
           </div>
         </section>
       </main>
     </div>
-    <footer>RESEARCH SIMULATION <span>·</span> FILLS IGNORE SPREAD AND INFORMATION <span>·</span> NO HEDGE COSTS OR LIVE INVENTORY</footer>
+    <footer>RESEARCH SIMULATION <span>·</span> VALUATION-DEPENDENT FILLS <span>·</span> NO HEDGE COSTS OR LIVE INVENTORY</footer>
   </div>
 </body>
 </html>

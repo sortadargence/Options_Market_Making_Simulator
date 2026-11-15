@@ -3,6 +3,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from market import OptionPricingModel
+from fill_probability import calculate_fill_probability
 
 
 @dataclass
@@ -33,7 +34,8 @@ class Configuration:
     # Market Making parameters
     half_spread: float = 0.1
     quote_size: int = 1
-    fill_probability: float = 0.5
+    base_fill_probability: float = 0.5   # Update from a fixed fill probability to scale with misspricing
+    fill_sensitivity: float = 5.0
     risk_aversion: float = 0.02
 
     # Delta Hedged life to expiry of the contract (in order to realize P&L as soon as the trade is made)
@@ -245,9 +247,21 @@ def simulation(config: Configuration, capture_trade_examples: int = 0) -> Simula
         if i == n:
             break
 
+        """
         p = float(np.clip(config.fill_probability * config.quote_size, 0.0, 1.0))
         ask_lifted = random_.random() < p 
         bid_hit = (random_.random() < p) if bid > 0 else False
+        """
+
+        ask_attractiveness = value_truth - ask
+        bid_attractiveness = bid - value_truth
+
+        ask_fill_probability = calculate_fill_probability(config.base_fill_probability, config.fill_sensitivity, ask_attractiveness + config.half_spread)
+        bid_fill_probability = calculate_fill_probability(config.base_fill_probability, config.fill_sensitivity, bid_attractiveness + config.half_spread)
+        
+        ask_lifted = random_.random() < ask_fill_probability
+        bid_hit = random_.random() < bid_fill_probability if bid > 0 else False
+
 
         if ask_lifted:
             fill_count += 1
